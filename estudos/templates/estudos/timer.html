@@ -1,0 +1,175 @@
+{% extends 'estudos/base.html' %}
+
+{% block title %}Dashboard | Gerenciador de Estudos{% endblock %}
+
+{% block content %}
+<!-- Top Bar de Sequência (Streak) e Conquistas -->
+<div class="d-flex justify-content-between align-items-center bg-white p-3 rounded-4 shadow-sm mb-4 border">
+    <div class="d-flex align-items-center gap-2">
+        <span class="fs-3 text-danger"><i class="bi bi-fire"></i></span>
+        <div>
+            <span class="fw-bold fs-5 text-dark">{{ perfil.streak_atual }} Dias Seguidos</span>
+            <small class="text-muted d-block">Recorde Pessoal: {{ perfil.maior_streak }} dias</small>
+        </div>
+    </div>
+    <button class="btn btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalIniciarSessao">
+        <i class="bi bi-play-circle-fill"></i> Iniciar Sessão
+    </button>
+</div>
+
+<!-- Painel de Métricas Principais -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-3 bg-white border-start border-primary border-4 rounded-3">
+            <span class="text-secondary small fw-semibold text-uppercase">Tempo Total Estudado</span>
+            <h4 class="fw-bold mb-0 text-dark">{% if horas > 0 %}{{ horas }}h {% endif %}{{ minutos_restantes }}min</h4>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-3 bg-white border-start border-success border-4 rounded-3">
+            <span class="text-secondary small fw-semibold text-uppercase">Árvores na Floresta</span>
+            <h4 class="fw-bold mb-0 text-dark">{{ floresta.count }} Árvores</h4>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-3 bg-white border-start border-info border-4 rounded-3">
+            <span class="text-secondary small fw-semibold text-uppercase">Medalhas Desbloqueadas</span>
+            <h4 class="fw-bold mb-0 text-dark">{{ conquistas_desbloqueadas.count }} Conquistas</h4>
+        </div>
+    </div>
+</div>
+
+<!-- Minha Floresta de Foco (Grade Visual) -->
+<div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+    <h5 class="fw-bold mb-3"><i class="bi bi-tree text-success"></i> Minha Floresta de Foco</h5>
+    {% if floresta %}
+        <div class="d-flex flex-wrap gap-3">
+            {% for arvore in floresta %}
+                <div class="text-center p-2 rounded-3 bg-light border" style="min-width: 80px;" title="{{ arvore.sessao.materia }} - {{ arvore.sessao.duracao_minutos }} min">
+                    <i class="bi {{ arvore.icone_css }} fs-1 text-success"></i>
+                    <small class="d-block text-muted" style="font-size: 0.7rem;">{{ arvore.plantada_em|date:"d/m" }}</small>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted mb-0">Sua floresta ainda não possui árvores. Conclua uma sessão para plantar a primeira!</p>
+    {% endif %}
+</div>
+
+<!-- Metas Acadêmicas -->
+<div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+    <h5 class="fw-bold mb-3"><i class="bi bi-bullseye text-primary"></i> Metas de Estudo Ativas</h5>
+    {% for meta in metas %}
+        <div class="mb-3">
+            <div class="d-flex justify-content-between mb-1">
+                <span class="fw-bold">{{ meta.disciplina.nome }} ({{ meta.get_periodo_display }})</span>
+                <span class="small text-muted">{{ meta.progresso_percentual }}%</span>
+            </div>
+            <div class="progress" style="height: 10px;">
+                <div class="progress-bar bg-primary" style="width: {{ meta.progresso_percentual }}%;"></div>
+            </div>
+        </div>
+    {% empty %}
+        <p class="text-muted mb-0">Nenhuma meta de estudo cadastrada.</p>
+    {% endfor %}
+</div>
+
+<!-- MODAL DE CONFIGURAÇÃO DO TIMER (Elemento Ausente) -->
+<div class="modal fade" id="modalIniciarSessao" tabindex="-1" aria-labelledby="modalIniciarSessaoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold" id="modalIniciarSessaoLabel">Configurar Sessão de Estudo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            
+            <form action="{% url 'iniciar_sessao' %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Matéria / Disciplina</label>
+                        <input type="text" name="materia" class="form-control" placeholder="Ex: Cálculo I, Algoritmos..." required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Assunto (Opcional)</label>
+                        <input type="text" name="assunto" class="form-control" placeholder="Ex: Integrais Duplas, Arrays...">
+                    </div>
+
+                    {% if disciplinas %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Vincular a uma Disciplina Cadastrada</label>
+                        <select name="disciplina" class="form-select">
+                            <option value="">Nenhuma (Apenas texto livre)</option>
+                            {% for d in disciplinas %}
+                                <option value="{{ d.id }}">{{ d.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+
+                    {% if avaliacoes %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Vincular a uma Prova / Trabalho</label>
+                        <select name="avaliacao" class="form-select">
+                            <option value="">Nenhum</option>
+                            {% for a in avaliacoes %}
+                                <option value="{{ a.id }}">{{ a.titulo }} ({{ a.disciplina.nome }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Método de Produtividade</label>
+                        <select name="metodo" id="select-metodo" class="form-select" onchange="toggleCustomFields(this.value)">
+                            <option value="POMODORO">Pomodoro (25min Foco / 5min Descanso)</option>
+                            <option value="CINQUENTA_DEZ">Método 50/10 (50min Foco / 10min Descanso)</option>
+                            <option value="CONTINUO">Estudo Contínuo</option>
+                            <option value="PERSONALIZADO">Personalizado</option>
+                        </select>
+                    </div>
+
+                    <div id="campos-personalizados" class="d-none border-top pt-3 mt-3">
+                        <div class="row g-2">
+                            <div class="col-6 mb-2">
+                                <label class="form-label small fw-semibold">Foco (min)</label>
+                                <input type="number" name="tempo_foco_min" value="25" class="form-control" min="1">
+                            </div>
+                            <div class="col-6 mb-2">
+                                <label class="form-label small fw-semibold">Descanso Curto (min)</label>
+                                <input type="number" name="tempo_descanso_curto_min" value="5" class="form-control" min="0">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold">Descanso Longo (min)</label>
+                                <input type="number" name="tempo_descanso_longo_min" value="15" class="form-control" min="0">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold">Total de Ciclos</label>
+                                <input type="number" name="total_ciclos_planejados" value="4" class="form-control" min="1">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0">
+                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2">
+                        <i class="bi bi-play-fill"></i> Começar a Estudar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleCustomFields(val) {
+    const fields = document.getElementById('campos-personalizados');
+    if (val === 'PERSONALIZADO' || val === 'CONTINUO') {
+        fields.classList.remove('d-none');
+    } else {
+        fields.classList.add('d-none');
+    }
+}
+</script>
+{% endblock %}

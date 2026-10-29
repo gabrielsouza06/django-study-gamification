@@ -1,0 +1,34 @@
+{% extends 'estudos/base.html' %}
+
+{% block title %}Galeria de Conquistas | Gerenciador de Estudos{% endblock %}
+
+{% block content %}
+<div class="text-center mb-4">
+    <h2 class="fw-bold text-primary mb-1"><i class="bi bi-trophy-fill text-warning"></i> Galeria de Conquistas</h2>
+    <p class="text-muted">Desbloqueie medalhas mantendo sua rotina de estudos ativa</p>
+</div>
+
+<div class="row g-3">
+    {% for item in conquistas_todas %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4 text-center bg-white h-100 {% if not item.desbloqueada %}opacity-50{% endif %}">
+                <div class="fs-1 mb-2 {% if item.desbloqueada %}text-warning{% else %}text-secondary{% endif %}">
+                    <i class="bi {{ item.conquista.icone }}"></i>
+                </div>
+                <h5 class="fw-bold mb-1 text-dark">{{ item.conquista.nome }}</h5>
+                <p class="text-muted small mb-2">{{ item.conquista.descricao }}</p>
+
+                {% if item.desbloqueada %}
+                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2 mt-auto">
+                        <i class="bi bi-check-circle-fill"></i> Desbloqueada em {{ item.desbloqueada_em|date:"d/m/Y" }}
+                    </span>
+                {% else %}
+                    <span class="badge bg-light text-muted border rounded-pill px-3 py-2 mt-auto">
+                        <i class="bi bi-lock-fill"></i> Critério: {{ item.conquista.criterio }}
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

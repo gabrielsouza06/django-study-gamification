@@ -1,0 +1,95 @@
+{% extends 'estudos/base.html' %}
+
+{% block title %}Avaliações e Provas | Gerenciador de Estudos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-primary mb-0"><i class="bi bi-calendar-check"></i> Provas e Trabalhos</h2>
+    <button class="btn btn-primary fw-bold" data-bs-toggle="modal" data-bs-target="#modalNovaAvaliacao">
+        <i class="bi bi-plus-circle"></i> Nova Avaliação
+    </button>
+</div>
+
+<!-- Lista de Provas e Trabalhos -->
+<div class="row g-3">
+    {% for a in avaliacoes %}
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <span class="badge bg-primary bg-opacity-10 text-primary mb-1">{{ a.get_tipo_display }}</span>
+                        <h5 class="fw-bold mb-0 text-dark">{{ a.titulo }}</h5>
+                        <small class="text-muted"><i class="bi bi-journal"></i> {{ a.disciplina.nome }}</small>
+                    </div>
+                    <span class="badge bg-warning text-dark"><i class="bi bi-clock"></i> {{ a.data_vencimento|date:"d/m/Y" }}</span>
+                </div>
+
+                <!-- Progresso de Preparação -->
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between small text-muted mb-1">
+                        <span>Preparação: {{ a.total_minutos_estudados }} min de {{ a.meta_horas_preparacao }}h</span>
+                        <span class="fw-bold text-dark">{{ a.progresso_percentual }}%</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-success" style="width: {{ a.progresso_percentual }}%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="col-12 text-center py-5">
+            <p class="text-muted">Nenhuma prova ou trabalho cadastrado.</p>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Modal Nova Avaliação -->
+<div class="modal fade" id="modalNovaAvaliacao" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Cadastrar Prova / Trabalho</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{% url 'criar_avaliacao' %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Título</label>
+                        <input type="text" name="titulo" class="form-control" placeholder="Ex: Prova 1 - Cálculo I" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Disciplina</label>
+                        <select name="disciplina" class="form-select" required>
+                            {% for d in disciplinas %}
+                                <option value="{{ d.id }}">{{ d.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Tipo</label>
+                            <select name="tipo" class="form-select">
+                                <option value="PROVA">Prova</option>
+                                <option value="TRABALHO">Trabalho</option>
+                                <option value="EXERCICIO">Exercícios</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Data da Prova</label>
+                            <input type="date" name="data_vencimento" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Meta de Horas de Preparação</label>
+                        <input type="number" name="meta_horas_preparacao" class="form-control" value="5" min="1">
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="submit" class="btn btn-primary w-100 fw-bold">Salvar Avaliação</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

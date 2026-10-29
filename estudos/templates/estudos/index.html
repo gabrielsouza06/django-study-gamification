@@ -1,0 +1,146 @@
+{% extends 'estudos/base.html' %}
+
+{% block title %}Dashboard | Gerenciador de Estudos{% endblock %}
+
+{% block content %}
+<!-- Banner de Sessão em Andamento se existir -->
+{% if sessao_ativa %}
+<div class="alert alert-warning border-0 shadow-sm d-flex justify-content-between align-items-center p-3 mb-4 rounded-3">
+    <div>
+        <i class="bi bi-broadcast text-danger me-2"></i>
+        <strong>Sessão em andamento:</strong> {{ sessao_ativa.materia }} ({{ sessao_ativa.get_etapa_atual_display }})
+    </div>
+    <a href="{% url 'timer' sessao_ativa.id %}" class="btn btn-warning btn-sm fw-bold">
+        Voltar para a Tela de Foco <i class="bi bi-arrow-right"></i>
+    </a>
+</div>
+{% endif %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="fw-bold text-primary mb-0"><i class="bi bi-journal-bookmark-fill"></i> Gerenciador de Estudos</h1>
+    <!-- Botão que abre o Modal -->
+    <button class="btn btn-success fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalIniciarSessao">
+        <i class="bi bi-play-circle-fill"></i> Iniciar Sessão
+    </button>
+</div>
+
+<!-- Painel de Métricas -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-3 bg-white border-start border-primary border-4">
+            <span class="text-secondary small fw-semibold text-uppercase">Tempo Total</span>
+            <h4 class="fw-bold mb-0 text-dark">{% if horas > 0 %}{{ horas }}h {% endif %}{{ minutos_restantes }}min</h4>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-3 bg-white border-start border-success border-4">
+            <span class="text-secondary small fw-semibold text-uppercase">Total de Sessões</span>
+            <h4 class="fw-bold mb-0 text-dark">{{ total_sessoes }}</h4>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-3 bg-white border-start border-info border-4">
+            <span class="text-secondary small fw-semibold text-uppercase">Média por Sessão</span>
+            <h4 class="fw-bold mb-0 text-dark">{{ media_minutos }} min</h4>
+        </div>
+    </div>
+</div>
+
+<!-- Histórico de Estudos Concluídos -->
+<h5 class="mb-3">Histórico de Estudos</h5>
+{% if sessoes %}
+    <div class="list-group shadow-sm border-0">
+        {% for sessao in sessoes %}
+            <div class="list-group-item d-flex justify-content-between align-items-center p-3 border-0 mb-2 rounded-3 bg-white">
+                <div>
+                    <h6 class="mb-1 fw-bold text-dark">
+                        {{ sessao.materia }}
+                        {% if sessao.assunto %}<small class="text-muted">({{ sessao.assunto }})</small>{% endif %}
+                    </h6>
+                    <small class="text-muted">
+                        <i class="bi bi-clock"></i> {{ sessao.duracao_minutos }} min &bull; 
+                        <i class="bi bi-cpu"></i> {{ sessao.get_metodo_display }} &bull;
+                        <i class="bi bi-calendar"></i> {{ sessao.data|date:"d/m/Y - H:i" }}
+                    </small>
+                </div>
+                <div class="btn-group">
+                    <a href="{% url 'editar' sessao.id %}" class="btn btn-sm btn-outline-warning border-0"><i class="bi bi-pencil"></i></a>
+                    <a href="{% url 'deletar' sessao.id %}" class="btn btn-sm btn-outline-danger border-0" onclick="return confirm('Excluir este registro?')"><i class="bi bi-trash"></i></a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info text-center border-0">Nenhum estudo registrado no histórico.</div>
+{% endif %}
+
+<!-- Modal de Configuração do Timer -->
+<div class="modal fade" id="modalIniciarSessao" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Configurar Sessão de Estudo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{% url 'iniciar_sessao' %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Matéria</label>
+                        <input type="text" name="materia" class="form-control" placeholder="Ex: Cálculo I" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Assunto (Opcional)</label>
+                        <input type="text" name="assunto" class="form-control" placeholder="Ex: Integrais Duplas">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Método de Produtividade</label>
+                        <select name="metodo" id="select-metodo" class="form-select" onchange="toggleCustomFields(this.value)">
+                            <option value="POMODORO">Pomodoro (25min / 5min)</option>
+                            <option value="CINQUENTA_DEZ">Método 50/10 (50min / 10min)</option>
+                            <option value="CONTINUO">Estudo Contínuo</option>
+                            <option value="PERSONALIZADO">Personalizado</option>
+                        </select>
+                    </div>
+
+                    <!-- Campos para o método Personalizado / Contínuo -->
+                    <div id="campos-personalizados" class="d-none border-top pt-3 mt-3">
+                        <div class="row g-2">
+                            <div class="col-6 mb-2">
+                                <label class="form-label small">Foco (min)</label>
+                                <input type="number" name="tempo_foco_min" value="25" class="form-control" min="1">
+                            </div>
+                            <div class="col-6 mb-2">
+                                <label class="form-label small">Descanso Curto (min)</label>
+                                <input type="number" name="tempo_descanso_curto_min" value="5" class="form-control" min="0">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small">Descanso Longo (min)</label>
+                                <input type="number" name="tempo_descanso_longo_min" value="15" class="form-control" min="0">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small">Total de Ciclos</label>
+                                <input type="number" name="total_ciclos_planejados" value="4" class="form-control" min="1">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="submit" class="btn btn-primary w-100 fw-bold">Começar a Estudar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleCustomFields(val) {
+    const fields = document.getElementById('campos-personalizados');
+    if (val === 'PERSONALIZADO' || val === 'CONTINUO') {
+        fields.classList.remove('d-none');
+    } else {
+        fields.classList.add('d-none');
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends 'estudos/base.html' %}
+
+{% block title %}Disciplinas | Gerenciador de Estudos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-primary mb-0"><i class="bi bi-journal-text"></i> Minhas Disciplinas</h2>
+    <button class="btn btn-primary fw-bold" data-bs-toggle="modal" data-bs-target="#modalNovaDisciplina">
+        <i class="bi bi-plus-circle"></i> Nova Disciplina
+    </button>
+</div>
+
+<!-- Lista de Disciplinas -->
+<div class="row g-3">
+    {% for d in disciplinas %}
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4" style="border-color: {{ d.cor_hex }} !important;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="fw-bold mb-0 text-dark">{{ d.nome }}</h5>
+                    <span class="badge bg-light text-dark border">{{ d.sessoes.count }} Sessões</span>
+                </div>
+                {% if d.descricao %}
+                    <p class="text-muted small mb-2">{{ d.descricao }}</p>
+                {% endif %}
+                <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                    <small class="text-muted">Cadastrada em {{ d.criada_em|date:"d/m/Y" }}</small>
+                    <a href="{% url 'deletar_disciplina' d.id %}" class="btn btn-sm btn-outline-danger border-0" onclick="return confirm('Excluir esta disciplina?')">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="col-12 text-center py-5">
+            <p class="text-muted">Nenhuma disciplina cadastrada ainda.</p>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Modal Modal Nova Disciplina -->
+<div class="modal fade" id="modalNovaDisciplina" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Cadastrar Disciplina</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{% url 'criar_disciplina' %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nome da Disciplina</label>
+                        <input type="text" name="nome" class="form-control" placeholder="Ex: Cálculo I, Algoritmos..." required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descrição (Opcional)</label>
+                        <textarea name="descricao" class="form-control" rows="2" placeholder="Ex: Ementa da matéria..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cor de Identificação</label>
+                        <input type="color" name="cor_hex" class="form-control form-control-color w-100" value="#4f46e5">
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="submit" class="btn btn-primary w-100 fw-bold">Salvar Disciplina</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
